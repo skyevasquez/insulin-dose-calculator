@@ -1,0 +1,60 @@
+mutation SeedData @auth(level: USER) {
+  user_upsertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      carbToInsulinRatio: 12.0,
+      createdAt: "2024-01-01T00:00:00Z",
+      displayName: "Test User",
+      email: "test@example.com",
+      insulinSensitivityFactor: 50.0,
+      targetBloodGlucose: 100
+    }
+  ])
+  bloodGlucoseEntry_upsertMany(data: [
+    {
+      id: "650e8400-e29b-41d4-a716-446655440001",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      loggedAt: "2024-07-24T12:00:00Z",
+      reading: 120
+    }
+  ])
+  carbEntry_upsertMany(data: [
+    {
+      id: "750e8400-e29b-41d4-a716-446655440002",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      carbohydrateGrams: 45,
+      loggedAt: "2024-07-24T12:15:00Z",
+      mealType: "Lunch"
+    }
+  ])
+  exerciseEntry_upsertMany(data: [
+    {
+      id: "850e8400-e29b-41d4-a716-446655440003",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      activityType: "Running",
+      durationMinutes: 30,
+      intensity: "Moderate",
+      loggedAt: "2024-07-24T17:00:00Z"
+    }
+  ])
+  insulinDose_upsertMany(data: [
+    {
+      id: "950e8400-e29b-41d4-a716-446655440004",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      bloodGlucoseEntryId: "650e8400-e29b-41d4-a716-446655440001",
+      carbEntryId: "750e8400-e29b-41d4-a716-446655440002",
+      administeredDose: 4.0,
+      calculatedDose: 3.5,
+      doseType: "Bolus",
+      loggedAt: "2024-07-24T12:20:00Z"
+    }
+  ])
+  setting_upsertMany(data: [
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      settingName: "Blood_Glucose_Unit",
+      settingValue: "mg/dL",
+      unit: "metric"
+    }
+  ])
+}

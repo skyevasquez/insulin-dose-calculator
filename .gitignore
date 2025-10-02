@@ -1,0 +1,51 @@
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+
+# Old Appwrite files (if you want to ignore them)
+appwrite-config.js
+appwrite.json
+deploy.sh
+DEPLOYMENT.md
+
+# Environment variables (if you add them)
+.env
+.env.local
+.env.*.local
+
+# Build outputs (if you add a build step)
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/

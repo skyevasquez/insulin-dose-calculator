@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insulin Dosage Calculator - Safe Diabetes Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .bg-gradient-medical {
+            background: linear-gradient(135deg, #4A9B9B 0%, #7FB069 100%);
+        }
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .pulse-gentle {
+            animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-gentle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .range-normal { background-color: #10B981; }
+        .range-caution { background-color: #F59E0B; }
+        .range-danger { background-color: #EF4444; }
+        .bg-pattern {
+            background-image: radial-gradient(circle at 1px 1px, rgba(74, 155, 155, 0.1) 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+        #p5-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen bg-pattern">
+    <div id="p5-background"></div>
+    
+    <!-- Authentication Container -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center px-4">
+        <div class="max-w-md w-full">
+            <!-- Auth Card -->
+            <div class="bg-white rounded-lg card-shadow p-8">
+                <div class="text-center mb-8">
+                    <div class="inline-flex w-16 h-16 bg-gradient-medical rounded-lg items-center justify-center mb-4">
+                        <span class="text-white font-bold text-2xl">ID</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900">Insulin Calculator</h2>
+                    <p class="text-gray-600 mt-2">Sign in to manage your insulin doses</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="login-email" placeholder="your@email.com" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="login-password" placeholder="••••••••" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <button id="login-btn" class="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors">
+                            Sign In
+                        </button>
+                        <div id="login-error" class="hidden text-red-600 text-sm text-center"></div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            Don't have an account? 
+                            <button id="show-signup" class="text-teal-600 hover:text-teal-700 font-medium">Sign Up</button>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signup-form" class="hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <input type="text" id="signup-name" placeholder="Your Name" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="signup-email" placeholder="your@email.com" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="signup-password" placeholder="••••••••" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                        </div>
+                        <button id="signup-btn" class="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors">
+                            Create Account
+                        </button>
+                        <div id="signup-error" class="hidden text-red-600 text-sm text-center"></div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            Already have an account? 
+                            <button id="show-login" class="text-teal-600 hover:text-teal-700 font-medium">Sign In</button>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <p class="text-xs text-gray-500 text-center">⚠️ For practice use only. Not for medical decisions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Container -->
+    <div id="app-container" class="hidden">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-medical rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">ID</span>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">Insulin Calculator</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="user-name" class="text-sm text-gray-600"></span>
+                    <a href="guidelines.html" class="text-teal-600 hover:text-teal-700 font-medium transition-colors">
+                        Guidelines
+                    </a>
+                    <button id="logout-btn" class="text-gray-600 hover:text-gray-800 font-medium transition-colors">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative bg-gradient-medical text-white py-12 overflow-hidden">
+        <div class="absolute inset-0 bg-black/10"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-shadow mb-4">Smart Insulin Management</h2>
+                    <p class="text-lg text-white/90 mb-6">Calculate your insulin doses safely with real-time monitoring and professional guidelines.</p>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-sm">
+                        <p class="font-semibold mb-2">⚠️ Medical Disclaimer</p>
+                        <p>This tool is for practice use only. Always consult your healthcare provider for medical decisions.</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img src="resources/hero-dashboard.png" alt="Medical Dashboard" class="rounded-lg shadow-2xl w-full h-64 object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Status Dashboard -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-lg card-shadow p-4 card-hover transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Last Reading</p>
+                        <p class="text-2xl font-bold text-gray-900 mono" id="last-reading">--</p>
+                    </div>
+                    <div class="w-3 h-3 rounded-full bg-teal-500"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg card-shadow p-4 card-hover transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Today's Doses</p>
+                        <p class="text-2xl font-bold text-gray-900 mono" id="daily-doses">0</p>
+                    </div>
+                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg card-shadow p-4 card-hover transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Lantus Taken</p>
+                        <p class="text-2xl font-bold text-gray-900" id="lantus-status">No</p>
+                    </div>
+                    <div class="w-3 h-3 rounded-full bg-orange-500" id="lantus-indicator"></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg card-shadow p-4 card-hover transition-all">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Health Score</p>
+                        <p class="text-2xl font-bold text-gray-900" id="health-score">--</p>
+                    </div>
+                    <div class="w-3 h-3 rounded-full bg-green-500" id="health-indicator"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Calculator Interface -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Blood Sugar Monitor -->
+            <div class="bg-white rounded-lg card-shadow p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Blood Sugar Monitor</h3>
+                    <div class="w-4 h-4 rounded-full pulse-gentle bg-teal-500" id="bs-pulse"></div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Blood Sugar (mg/dL)</label>
+                        <input type="number" id="blood-sugar" placeholder="Enter reading" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent mono text-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Timing</label>
+                        <select id="timing-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            <option value="before-meals">Before Meals</option>
+                            <option value="before-bed">Before Bed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Range Status</span>
+                            <span class="text-sm font-bold" id="range-status">Enter reading</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all duration-500" id="range-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Correction Dose</span>
+                            <span class="text-2xl font-bold text-teal-700 mono" id="correction-dose">0 units</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meal Planning Dashboard -->
+            <div class="bg-white rounded-lg card-shadow p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Meal Planning</h3>
+                    <div class="w-4 h-4 rounded-full bg-green-500"></div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
+                        <select id="meal-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Carbohydrates (grams)</label>
+                        <input type="number" id="carb-input" placeholder="Enter carbs" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent mono text-lg">
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Carb Goal Progress</span>
+                            <span class="text-sm font-bold" id="carb-progress">0/60g</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-green-500 h-3 rounded-full transition-all duration-500" id="carb-bar" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Goal: 30-60g per meal</p>
+                    </div>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Meal Dose</span>
+                            <span class="text-2xl font-bold text-green-700 mono" id="meal-dose">0 units</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Dose Calculator -->
+        <div class="mt-8 bg-white rounded-lg card-shadow p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-semibold text-gray-900">Total Recommended Dose</h3>
+                <div class="w-6 h-6 rounded-full bg-blue-500"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <p class="text-sm font-medium text-gray-600 mb-2">Meal Dose</p>
+                    <p class="text-3xl font-bold text-green-600 mono" id="total-meal-dose">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm font-medium text-gray-600 mb-2">Correction Dose</p>
+                    <p class="text-3xl font-bold text-teal-600 mono" id="total-correction-dose">0</p>
+                </div>
+                <div class="text-center bg-blue-50 rounded-lg p-4">
+                    <p class="text-sm font-medium text-gray-600 mb-2">Total Dose</p>
+                    <p class="text-4xl font-bold text-blue-600 mono" id="total-dose">0 units</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex space-x-4">
+                <button id="confirm-dose" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                    Confirm Dose Taken
+                </button>
+                <button id="reset-calc" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                    Reset
+                </button>
+            </div>
+            
+            <div id="safety-warning" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg hidden">
+                <div class="flex items-center">
+                    <div class="w-5 h-5 bg-red-500 rounded-full mr-3 flex items-center justify-center">
+                        <span class="text-white text-xs">!</span>
+                    </div>
+                    <p class="text-red-700 font-medium" id="warning-text"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Summary Dashboard -->
+        <div class="mt-8 bg-white rounded-lg card-shadow p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6">Today's Summary</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-lg font-medium text-gray-700 mb-4">Blood Sugar Trend</h4>
+                    <div id="bs-chart" class="h-64"></div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium text-gray-700 mb-4">Insulin Log</h4>
+                    <div id="insulin-log" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-500 text-center py-8">No doses logged today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lantus Tracker -->
+        <div class="mt-8 bg-white rounded-lg card-shadow p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Lantus (Basal Insulin)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-700">Daily Dose</span>
+                        <span class="text-2xl font-bold text-orange-600 mono">15 units</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Take at the same time every day</p>
+                </div>
+                <div class="flex flex-col justify-center">
+                    <button id="lantus-taken" class="bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors mb-2">
+                        Mark Lantus as Taken
+                    </button>
+                    <p class="text-xs text-gray-500 text-center">Time: <span id="lantus-time">--:--</span></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center">
+                <p class="text-sm text-gray-600 mb-2">⚠️ This tool is for practice use only. Always follow your healthcare provider's instructions.</p>
+                <p class="text-xs text-gray-500">In case of emergency, contact your healthcare provider immediately.</p>
+                <p class="text-xs text-gray-400 mt-4">© 2025 Insulin Dosage Calculator. Reviewed 1/2023.</p>
+            </div>
+        </div>
+    </footer>
+    
+    </div> <!-- End app-container -->
+
+    <script src="firebase-config.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

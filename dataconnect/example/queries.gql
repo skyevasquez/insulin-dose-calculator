@@ -1,0 +1,42 @@
+mutation CreateInsulinDose($bloodGlucoseEntryId: UUID, $carbEntryId: UUID, $administeredDose: Float, $calculatedDose: Float!, $doseType: String, $notes: String) @auth(level: USER) {
+  insulinDose_insert(data: {
+    bloodGlucoseEntryId: $bloodGlucoseEntryId,
+    carbEntryId: $carbEntryId,
+    administeredDose: $administeredDose,
+    calculatedDose: $calculatedDose,
+    doseType: $doseType,
+    loggedAt_expr: "request.time",
+    userId_expr: "auth.uid",
+    notes: $notes
+  })
+}
+
+query GetCarbEntriesForUser @auth(level: USER) {
+  carbEntries(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    carbohydrateGrams
+    loggedAt
+    mealType
+    notes
+  }
+}
+
+query GetBloodGlucoseEntriesForUser @auth(level: USER) {
+  bloodGlucoseEntries(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    reading
+    loggedAt
+    notes
+  }
+}
+
+mutation UpdateUser($carbToInsulinRatio: Float!, $insulinSensitivityFactor: Float!, $targetBloodGlucose: Int!) @auth(level: USER) {
+  user_update(
+    key: {id_expr: "auth.uid"}
+    data: {
+      carbToInsulinRatio: $carbToInsulinRatio
+      insulinSensitivityFactor: $insulinSensitivityFactor
+      targetBloodGlucose: $targetBloodGlucose
+    }
+  )
+}

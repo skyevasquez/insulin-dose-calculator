@@ -1,0 +1,51 @@
+type User @table {
+  email: String!
+  createdAt: Timestamp!
+  insulinSensitivityFactor: Float!
+  carbToInsulinRatio: Float!
+  targetBloodGlucose: Int!
+  displayName: String
+  photoUrl: String
+}
+
+type BloodGlucoseEntry @table {
+  user: User
+  reading: Int!
+  loggedAt: Timestamp!
+  notes: String
+}
+
+type CarbEntry @table {
+  user: User
+  carbohydrateGrams: Int!
+  loggedAt: Timestamp!
+  mealType: String
+  notes: String
+}
+
+type ExerciseEntry @table {
+  user: User
+  activityType: String!
+  durationMinutes: Int!
+  loggedAt: Timestamp!
+  intensity: String
+  notes: String
+}
+
+type InsulinDose @table {
+  user: User
+  bloodGlucoseEntry: BloodGlucoseEntry
+  carbEntry: CarbEntry
+  calculatedDose: Float!
+  loggedAt: Timestamp!
+  administeredDose: Float
+  doseType: String
+  notes: String
+}
+
+type Setting @table(key: ["user", "settingName"]) {
+  user: User!
+  settingName: String!
+  settingValue: String!
+  unit: String
+}
