@@ -35,7 +35,12 @@ auth.onAuthStateChanged((user) => {
         currentUser = user;
         console.log('User is logged in:', user.email);
         showApp();
-        loadUserData();
+        loadUserData().then(() => {
+            // Initialize app after data is loaded
+            if (typeof initializeApp === 'function') {
+                initializeApp();
+            }
+        });
     } else {
         currentUser = null;
         console.log('User is logged out');
@@ -294,6 +299,11 @@ async function loadUserData() {
         appState.lantusTaken = settings.lantusTaken || false;
         appState.lantusTime = settings.lantusTime || null;
         appState.userSettingsId = settings.id;
+        
+        // Check for daily reset
+        if (typeof checkDailyReset === 'function') {
+            checkDailyReset();
+        }
         
         // Update UI
         if (typeof updateDashboard === 'function') {

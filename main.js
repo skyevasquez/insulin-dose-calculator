@@ -99,9 +99,7 @@ function setupAuthListeners() {
         
         try {
             await login(email, password);
-            initializeApp();
-            setupEventListeners();
-            initializeChart();
+            // Auth state change listener will handle initialization
         } catch (error) {
             errorEl.textContent = error.message || 'Login failed. Please try again.';
             errorEl.classList.remove('hidden');
@@ -117,9 +115,7 @@ function setupAuthListeners() {
         
         try {
             await signUp(email, password, name);
-            initializeApp();
-            setupEventListeners();
-            initializeChart();
+            // Auth state change listener will handle initialization
         } catch (error) {
             errorEl.textContent = error.message || 'Signup failed. Please try again.';
             errorEl.classList.remove('hidden');
@@ -817,7 +813,5 @@ function checkDailyReset() {
     });
 }
 
-// Check for daily reset when authenticated
-if (FirebaseService.getCurrentUser()) {
-    checkDailyReset();
-}
+// Daily reset is checked automatically when user data is loaded via loadUserData()
+// which is called by the auth state change listener in firebase-config.js
